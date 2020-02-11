@@ -1,0 +1,45 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/build/microservice-rust
+    docker:
+      - image: circleci/rust:latest
+    steps:
+    - checkout
+    - run: sudo apt update
+    - run: rustup component add rustfmt
+    - run: rustup component add clippy
+    - run: cargo build
+    - run: cargo test
+    - run: cargo fmt
+    - run: cargo clippy
+  deploy:
+    working_directory: ~/build/microservice-rust
+    docker:
+        - image: circleci/rust:latest
+    steps:
+    - checkout
+    - run: sudo apt update
+    - run: rustup component add rustfmt
+    - run: rustup component add clippy
+    - run: cargo build
+    - run: cargo test
+    - run: cargo fmt
+    - run: cargo clippy
+    - setup_remote_docker:
+    - run: make docker-build
+
+workflows:
+  version: 2
+  development:
+    jobs:
+    - build:
+        filters:
+          branches:
+            ignore: master
+  deployment:
+    jobs:
+    - deploy:
+        filters:
+          branches:
+            only: master
