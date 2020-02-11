@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package service;
+
+service TodoAPI {
+    rpc GetTodo(GetTodoRequest) returns (GetTodoResponse) {}
+    rpc CreateTodo(CreateTodoRequest) returns (CreateTodoResponse) {}
+    rpc ListTodos(ListTodosRequest) returns (ListTodosResponse) {};
+}
+
+message GetTodoRequest {
+    string id = 1;
+}
+
+message GetTodoResponse {
+    Todo todo = 1;
+}
+
+message CreateTodoRequest {
+    string title = 1;
+    string description = 2;
+}
+
+message CreateTodoResponse {
+    string id = 1;
+}
+
+message ListTodosRequest {}
+
+message ListTodosResponse {
+    repeated Todo todos = 1;
+}
+
+message Todo {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+}
