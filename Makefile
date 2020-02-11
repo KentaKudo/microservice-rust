@@ -2,6 +2,7 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 base_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
 
 SERVICE ?= $(base_dir)
+GIT_HASH := $(shell git rev-parse HEAD)
 
 DOCKER_REGISTRY=docker.io
 DOCKER_REPOSITORY_NAMESPACE=kentakudo
