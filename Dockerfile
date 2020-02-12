@@ -3,7 +3,7 @@ FROM rust:1.32-slim as build
 ARG SERVICE
 
 RUN apt update
-RUN apt install -y git
+RUN apt install -y git musl-tools
 
 RUN rustup target add x86_64-unknown-linux-musl
 
