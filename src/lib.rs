@@ -1,9 +1,12 @@
 // pub mod config;
+pub mod service;
+pub mod service_grpc;
 
 use std::sync::mpsc::channel;
 use std::thread;
 
 // use crate::config::Config;
+use crate::service::API;
 
 use boxfnonce::SendBoxFnOnce;
 use futures::{Future, Stream};
@@ -18,11 +21,19 @@ const SHORT_GIT_HASH: &str = env!("SHORT_GIT_HASH");
 pub fn app() {
     // let config = Config::from_args();
 
+    let api = API::new();
+
     info!("Running"; "app" => APP_NAME, "version" => SHORT_GIT_HASH);
     
     run(vec![
         catch_signals(),
     ]);
+}
+
+fn grpc_server(api: API, port: u16) -> RunFunc {
+    SendBoxFnOnce::from(|| {
+        let service = service_grpc::server::TodoApiServer::new(api);
+    })
 }
 
 fn catch_signals() -> RunFunc {
