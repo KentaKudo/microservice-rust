@@ -1,4 +1,5 @@
 pub mod config;
+pub mod error;
 pub mod service;
 pub mod service_grpc;
 
@@ -71,7 +72,7 @@ fn catch_signals() -> RunFunc {
 
         let stream = sigint.select(sigterm);
 
-        let (_item, _rest) = tokio::runtime::current_thread::block_on_all(stream.into_future())
+        let (_item, _rest) = ::tokio::runtime::current_thread::block_on_all(stream.into_future())
             .ok()
             .unwrap();
 
