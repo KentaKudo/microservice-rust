@@ -26,7 +26,9 @@ const SHORT_GIT_HASH: &str = env!("SHORT_GIT_HASH");
 pub fn app() {
     let config = Config::from_args();
 
-    let api = API::new();
+    let store = NullStore::new();
+
+    let api = API::new(store);
 
     info!("Running"; "app" => APP_NAME, "version" => SHORT_GIT_HASH);
     
@@ -36,7 +38,7 @@ pub fn app() {
     ]);
 }
 
-fn grpc_server(api: API, port: u16) -> RunFunc {
+fn grpc_server<S: Store>(api: API<S>, port: u16) -> RunFunc {
     SendBoxFnOnce::from(|| {
         let service = service_grpc::server::TodoApiServer::new(api);
 

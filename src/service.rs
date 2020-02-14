@@ -1,3 +1,4 @@
+use crate::store::Store;
 use crate::service_grpc::{
     server, Todo,
     GetTodoRequest, GetTodoResponse,
@@ -9,15 +10,17 @@ use futures::future;
 use tower_grpc::{Request, Response};
 
 #[derive(Clone)]
-pub(crate) struct API {}
+pub(crate) struct API<S: Store> {
+    store: S,
+}
 
-impl API {
-    pub fn new() -> Self {
-        API {}
+impl<S: Store> API<S> {
+    pub fn new(store: S) -> Self {
+        API { store }
     }
 }
 
-impl server::TodoApi for API {
+impl<S: Store> server::TodoApi for API<S> {
     type GetTodoFuture = future::FutureResult<Response<GetTodoResponse>, tower_grpc::Status>;
     type CreateTodoFuture = future::FutureResult<Response<CreateTodoResponse>, tower_grpc::Status>;
     type ListTodosFuture = future::FutureResult<Response<ListTodosResponse>, tower_grpc::Status>;
@@ -26,11 +29,12 @@ impl server::TodoApi for API {
         &mut self,
         request: Request<GetTodoRequest>,
     ) -> Self::GetTodoFuture {
+        let todo = self.store.get(&request.get_ref().id)?;
         future::ok(Response::new(GetTodoResponse {
                 todo: Some(Todo{
-                    id: String::default(),
-                    title: String::default(),
-                    description: String::default(),
+                    id: todo.id,
+                    title: todo.title,
+                    description: todo.description,
                 })
             }))
     }
