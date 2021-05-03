@@ -3,26 +3,14 @@ name = "microservice-rust"
 version = "0.1.0"
 authors = ["KentaKudo <yd37574@gmail.com>"]
 edition = "2018"
-build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-structopt = "0.2"
-tokio = "0.1"
-tokio-signal = "0.2"
-futures = "0.1"
-slog = "2.4"
-slog-async = "2.3"
-slog-json = "2.3"
-slog-scope = "4.1"
-boxfnonce = "0.1"
-bytes = "0.4"
-prost = "0.5"
-prost-types = "0.5"
-tower-h2 = { git = "https://github.com/tower-rs/tower-h2"  }
-tower-grpc = { git = "https://github.com/tower-rs/tower-grpc" }
-tower-service = "0.2"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+tonic = "0.4"
+prost = "0.7"
 
 [build-dependencies]
-tower-grpc-build = { git = "https://github.com/tower-rs/tower-grpc" }
+tonic-build = "0.4"
+

@@ -3,17 +3,9 @@ syntax = "proto3";
 package service;
 
 service TodoAPI {
-    rpc GetTodo(GetTodoRequest) returns (GetTodoResponse) {}
     rpc CreateTodo(CreateTodoRequest) returns (CreateTodoResponse) {}
+    rpc GetTodo(GetTodoRequest) returns (GetTodoResponse) {}
     rpc ListTodos(ListTodosRequest) returns (ListTodosResponse) {};
-}
-
-message GetTodoRequest {
-    string id = 1;
-}
-
-message GetTodoResponse {
-    Todo todo = 1;
 }
 
 message CreateTodoRequest {
@@ -23,6 +15,14 @@ message CreateTodoRequest {
 
 message CreateTodoResponse {
     string id = 1;
+}
+
+message GetTodoRequest {
+    string id = 1;
+}
+
+message GetTodoResponse {
+    Todo todo = 1;
 }
 
 message ListTodosRequest {}
@@ -36,3 +36,4 @@ message Todo {
     string title = 2;
     string description = 3;
 }
+
