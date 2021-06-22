@@ -5,17 +5,29 @@ use crate::proto::{
     CreateTodoRequest, CreateTodoResponse, GetTodoRequest, GetTodoResponse, ListTodosRequest,
     ListTodosResponse,
 };
+use crate::todo::Service as TodoService;
 
-#[derive(Debug, Default)]
-pub struct Service {}
+#[derive(Debug)]
+pub(crate) struct Service<T: TodoService + 'static> {
+    todo: T,
+}
+
+impl<T: TodoService> Service<T> {
+   pub fn new(todo: T) -> Self {
+       Service { todo }
+   }
+}
 
 #[tonic::async_trait]
-impl TodoApi for Service {
+impl<T: TodoService + 'static> TodoApi for Service<T> {
     async fn create_todo(
         &self,
         request: Request<CreateTodoRequest>,
     ) -> Result<Response<CreateTodoResponse>, Status> {
-        Ok(Response::new(CreateTodoResponse::default()))
+        let todoReq = request.get_ref();
+        self.todo.create(&todoReq.title, &todoReq.description)
+            .map(|_| Response::new(CreateTodoResponse::default()))
+            .map_err( |_| Status::internal("")) // TODO
     }
 
     async fn get_todo(
