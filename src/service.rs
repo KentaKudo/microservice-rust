@@ -1,13 +1,23 @@
 use tonic::{Request, Response, Status};
+use uuid::Uuid;
 
+use crate::crdb::TodoRepo;
 use crate::proto::todo_api_server::TodoApi;
 use crate::proto::{
     CreateTodoRequest, CreateTodoResponse, GetTodoRequest, GetTodoResponse, ListTodosRequest,
     ListTodosResponse,
 };
 
-#[derive(Debug, Default)]
-pub struct Service {}
+#[derive(Debug)]
+pub(crate) struct Service {
+    repo: TodoRepo,
+}
+
+impl Service {
+    pub fn new(repo: TodoRepo) -> Self {
+        Service { repo }
+    }
+}
 
 #[tonic::async_trait]
 impl TodoApi for Service {
@@ -15,20 +25,37 @@ impl TodoApi for Service {
         &self,
         request: Request<CreateTodoRequest>,
     ) -> Result<Response<CreateTodoResponse>, Status> {
-        Ok(Response::new(CreateTodoResponse::default()))
+        let CreateTodoRequest { title, description } = request.into_inner();
+        self.repo
+            .create(&title, &description)
+            .await
+            .map(|id| Response::new(CreateTodoResponse { id }))
+            .map_err(|_| Status::internal(""))
     }
 
     async fn get_todo(
         &self,
         request: Request<GetTodoRequest>,
     ) -> Result<Response<GetTodoResponse>, Status> {
-        Ok(Response::new(GetTodoResponse::default()))
+        let GetTodoRequest { id } = request.into_inner();
+        let uuid =
+            Uuid::parse_str(&id).map_err(|_| Status::invalid_argument("invalid id format"))?;
+
+        self.repo
+            .get(&uuid)
+            .await
+            .map(|todo| Response::new(GetTodoResponse { todo: Some(todo) }))
+            .map_err(|_| Status::internal(""))
     }
 
     async fn list_todos(
         &self,
-        request: Request<ListTodosRequest>,
+        _: Request<ListTodosRequest>,
     ) -> Result<Response<ListTodosResponse>, Status> {
-        Ok(Response::new(ListTodosResponse::default()))
+        self.repo
+            .list()
+            .await
+            .map(|todos| Response::new(ListTodosResponse { todos }))
+            .map_err(|_| Status::internal(""))
     }
 }

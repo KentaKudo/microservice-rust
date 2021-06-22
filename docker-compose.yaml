@@ -1,0 +1,24 @@
+version: "3"
+services:
+  cockroachdb:
+    image: cockroachdb/cockroach
+    container_name: cockroachdb
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    command: ["start-single-node", "--insecure"]
+
+  cockroachdb-setup:
+    image: cockroachdb/cockroach
+    depends_on:
+      - cockroachdb
+    entrypoint: "/bin/bash -c"
+    command:
+      - |
+        {
+          echo "Initializing cluster..."
+          while ! /cockroach/cockroach init --insecure --host=cockroachdb 2>&1 >/dev/null | grep "already been initialized"; do sleep 1; done;
+        } && {
+          echo "Creating database"
+          /cockroach/cockroach sql --user=root --insecure --host=cockroachdb --execute="CREATE DATABASE IF NOT EXISTS \"test\";"
+        }
