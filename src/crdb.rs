@@ -1,10 +1,10 @@
-use std::time;
-
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use tokio_postgres::{Client, NoTls};
 use uuid::Uuid;
 
 use crate::proto::Todo;
+use crate::timestamp::Timestamp;
 
 #[derive(Debug)]
 pub(crate) struct TodoRepo {
@@ -53,12 +53,15 @@ impl TodoRepo {
             )
             .await?;
 
-        let created_at = row.try_get::<&str, time::Time>("created_at")?;
+        let created_at = row.try_get::<&str, DateTime<Utc>>("created_at")?;
+        let updated_at = row.try_get::<&str, DateTime<Utc>>("updated_at")?;
+
         Ok(Todo {
             id: id.to_string(),
             title: row.try_get("title")?,
             description: row.try_get("description")?,
-            created_at,
+            created_at: Some(Timestamp::from(created_at).into()),
+            updated_at: Some(Timestamp::from(updated_at).into()),
         })
     }
 
@@ -67,10 +70,15 @@ impl TodoRepo {
 
         let mut todos = vec![];
         for row in rows {
+            let created_at = row.try_get::<&str, DateTime<Utc>>("created_at")?;
+            let updated_at = row.try_get::<&str, DateTime<Utc>>("updated_at")?;
+
             let todo = Todo {
                 id: row.try_get::<&str, Uuid>("id")?.to_string(),
                 title: row.try_get("title")?,
                 description: row.try_get("description")?,
+                created_at: Some(Timestamp::from(created_at).into()),
+                updated_at: Some(Timestamp::from(updated_at).into()),
             };
 
             todos.push(todo);

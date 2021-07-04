@@ -1,3 +1,5 @@
+use anyhow::Error;
+use log::error;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
@@ -30,7 +32,7 @@ impl TodoApi for Service {
             .create(&title, &description)
             .await
             .map(|id| Response::new(CreateTodoResponse { id }))
-            .map_err(|_| Status::internal(""))
+            .map_err(handle_error)
     }
 
     async fn get_todo(
@@ -45,7 +47,7 @@ impl TodoApi for Service {
             .get(&uuid)
             .await
             .map(|todo| Response::new(GetTodoResponse { todo: Some(todo) }))
-            .map_err(|_| Status::internal(""))
+            .map_err(handle_error)
     }
 
     async fn list_todos(
@@ -56,6 +58,11 @@ impl TodoApi for Service {
             .list()
             .await
             .map(|todos| Response::new(ListTodosResponse { todos }))
-            .map_err(|_| Status::internal(""))
+            .map_err(handle_error)
     }
+}
+
+fn handle_error(e: Error) -> Status {
+    error!("{}", e);
+    Status::internal("")
 }
