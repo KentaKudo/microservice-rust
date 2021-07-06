@@ -2,6 +2,7 @@ mod crdb;
 mod proto;
 mod service;
 mod timestamp;
+mod todo;
 
 use anyhow::{Context, Result};
 use tonic::transport::Server;

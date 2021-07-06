@@ -31,7 +31,7 @@ impl TodoApi for Service {
         self.repo
             .create(&title, &description)
             .await
-            .map(|id| Response::new(CreateTodoResponse { id }))
+            .map(|id| Response::new(CreateTodoResponse { id: id.to_string() }))
             .map_err(handle_error)
     }
 
