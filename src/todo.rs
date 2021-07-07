@@ -3,13 +3,9 @@ use uuid::Uuid;
 
 use crate::proto::Todo;
 
-pub trait TodoReader {
-    fn get(&self, id: &Uuid) -> Result<Todo>;
-    fn list(&self) -> Result<Vec<Todo>>;
+#[tonic::async_trait]
+pub trait TodoService {
+    async fn get(&self, id: &Uuid) -> Result<Todo>;
+    async fn list(&self) -> Result<Vec<Todo>>;
+    async fn create(&self, title: &str, description: &str) -> Result<Uuid>;
 }
-
-pub trait TodoWriter {
-    fn create(&self, title: &str, description: &str) -> Result<Uuid>;
-}
-
-pub trait TodoService: TodoReader + TodoWriter {}

@@ -3,32 +3,32 @@ use log::error;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
-use crate::crdb::TodoRepo;
 use crate::proto::todo_api_server::TodoApi;
 use crate::proto::{
     CreateTodoRequest, CreateTodoResponse, GetTodoRequest, GetTodoResponse, ListTodosRequest,
     ListTodosResponse,
 };
+use crate::todo::TodoService;
 
 #[derive(Debug)]
-pub(crate) struct Service {
-    repo: TodoRepo,
+pub(crate) struct Service<T> {
+    todo: T,
 }
 
-impl Service {
-    pub fn new(repo: TodoRepo) -> Self {
-        Service { repo }
+impl<T> Service<T> {
+    pub fn new(todo: T) -> Self {
+        Service { todo }
     }
 }
 
 #[tonic::async_trait]
-impl TodoApi for Service {
+impl<T: TodoService + Send + Sync + 'static> TodoApi for Service<T> {
     async fn create_todo(
         &self,
         request: Request<CreateTodoRequest>,
     ) -> Result<Response<CreateTodoResponse>, Status> {
         let CreateTodoRequest { title, description } = request.into_inner();
-        self.repo
+        self.todo
             .create(&title, &description)
             .await
             .map(|id| Response::new(CreateTodoResponse { id: id.to_string() }))
@@ -43,7 +43,7 @@ impl TodoApi for Service {
         let uuid =
             Uuid::parse_str(&id).map_err(|_| Status::invalid_argument("invalid id format"))?;
 
-        self.repo
+        self.todo
             .get(&uuid)
             .await
             .map(|todo| Response::new(GetTodoResponse { todo: Some(todo) }))
@@ -54,7 +54,7 @@ impl TodoApi for Service {
         &self,
         _: Request<ListTodosRequest>,
     ) -> Result<Response<ListTodosResponse>, Status> {
-        self.repo
+        self.todo
             .list()
             .await
             .map(|todos| Response::new(ListTodosResponse { todos }))

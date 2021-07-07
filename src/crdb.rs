@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 use crate::proto::Todo;
 use crate::timestamp::Timestamp;
+use crate::todo::TodoService;
 
 #[derive(Debug)]
 pub(crate) struct TodoRepo {
@@ -30,8 +31,9 @@ impl TodoRepo {
     }
 }
 
-impl TodoRepo {
-    pub async fn create(&self, title: &str, description: &str) -> Result<Uuid> {
+#[tonic::async_trait]
+impl TodoService for TodoRepo {
+    async fn create(&self, title: &str, description: &str) -> Result<Uuid> {
         let stmt = self
             .client
             .prepare("INSERT INTO todos (title, description) VALUES ($1, $2) RETURNING id")
@@ -51,7 +53,7 @@ impl TodoRepo {
         Ok(id)
     }
 
-    pub async fn get(&self, id: &Uuid) -> Result<Todo> {
+    async fn get(&self, id: &Uuid) -> Result<Todo> {
         let row = self
             .client
             .query_one(
@@ -79,7 +81,7 @@ impl TodoRepo {
         })
     }
 
-    pub async fn list(&self) -> Result<Vec<Todo>> {
+    async fn list(&self) -> Result<Vec<Todo>> {
         let rows = self
             .client
             .query("SELECT * FROM todos", &[])
