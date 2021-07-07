@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Error, Result};
 use log::error;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
@@ -65,4 +65,145 @@ impl<T: TodoService + Send + Sync + 'static> TodoApi for Service<T> {
 fn handle_error(e: Error) -> Status {
     error!("{}", e);
     Status::internal("")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use chrono::{DateTime, NaiveDate, Utc};
+    use mockall::predicate::*;
+    use mockall::*;
+
+    use crate::proto::Todo;
+    use crate::timestamp::Timestamp;
+
+    mock! {
+        MyTodoService {}
+        #[tonic::async_trait]
+        impl TodoService for MyTodoService {
+            async fn get(&self, id: &Uuid) -> Result<Todo>;
+            async fn list(&self) -> Result<Vec<Todo>>;
+            async fn create(&self, title: &str, description: &str) -> Result<Uuid>;
+        }
+    }
+
+    #[tokio::test]
+    async fn create_todo() -> Result<()> {
+        let (title, description) = ("clean the house", "start from the kitchen");
+
+        let mut mock = MockMyTodoService::new();
+        let mock_uuid = Uuid::new_v4();
+        mock.expect_create()
+            .with(eq(title), eq(description))
+            .return_once(move |_, _| Ok(mock_uuid));
+
+        let sut = Service::new(mock);
+        let got = sut.create_todo(Request::new(CreateTodoRequest {
+            title: title.to_string(),
+            description: description.to_string(),
+        }));
+
+        let CreateTodoResponse { id } = got.await?.into_inner();
+        assert_eq!(mock_uuid.to_string(), id);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn get_todo() -> Result<()> {
+        let uuid = Uuid::new_v4();
+        let input = Todo {
+            id: uuid.to_string(),
+            title: "Clean the house".to_string(),
+            description: "Start from the kitchen".to_string(),
+            created_at: Some(
+                Timestamp::from(DateTime::from_utc(
+                    NaiveDate::from_ymd(2021, 7, 6).and_hms(22, 0, 0),
+                    Utc,
+                ))
+                .into(),
+            ),
+            updated_at: Some(
+                Timestamp::from(DateTime::from_utc(
+                    NaiveDate::from_ymd(2021, 7, 7).and_hms(22, 0, 0),
+                    Utc,
+                ))
+                .into(),
+            ),
+        };
+
+        let mut mock = MockMyTodoService::new();
+        let mock_todo = input.clone();
+        mock.expect_get()
+            .with(eq(uuid))
+            .return_once(move |_| Ok(mock_todo));
+
+        let sut = Service::new(mock);
+        let got = sut.get_todo(Request::new(GetTodoRequest {
+            id: uuid.to_string(),
+        }));
+
+        let GetTodoResponse { todo } = got.await?.into_inner();
+        assert_ne!(None, todo);
+        assert_eq!(input, todo.unwrap());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn list_todos() -> Result<()> {
+        let input = vec![
+            Todo {
+                id: Uuid::new_v4().to_string(),
+                title: "Clean the house".to_string(),
+                description: "Start from the kitchen".to_string(),
+                created_at: Some(
+                    Timestamp::from(DateTime::from_utc(
+                        NaiveDate::from_ymd(2021, 7, 6).and_hms(22, 0, 0),
+                        Utc,
+                    ))
+                    .into(),
+                ),
+                updated_at: Some(
+                    Timestamp::from(DateTime::from_utc(
+                        NaiveDate::from_ymd(2021, 7, 7).and_hms(22, 0, 0),
+                        Utc,
+                    ))
+                    .into(),
+                ),
+            },
+            Todo {
+                id: Uuid::new_v4().to_string(),
+                title: "Wash the bathtab".to_string(),
+                description: "Use sponge and clean it".to_string(),
+                created_at: Some(
+                    Timestamp::from(DateTime::from_utc(
+                        NaiveDate::from_ymd(2021, 7, 8).and_hms(22, 0, 0),
+                        Utc,
+                    ))
+                    .into(),
+                ),
+                updated_at: Some(
+                    Timestamp::from(DateTime::from_utc(
+                        NaiveDate::from_ymd(2021, 7, 9).and_hms(22, 0, 0),
+                        Utc,
+                    ))
+                    .into(),
+                ),
+            },
+        ];
+
+        let mut mock = MockMyTodoService::new();
+        let mock_todos = input.clone();
+        mock.expect_list().return_once(move || Ok(mock_todos));
+
+        let sut = Service::new(mock);
+        let got = sut.list_todos(Request::new(ListTodosRequest {}));
+
+        let ListTodosResponse { todos } = got.await?.into_inner();
+        assert_eq!(input, todos);
+
+        Ok(())
+    }
 }
